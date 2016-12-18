@@ -1,0 +1,11 @@
+c:\users\dom\documents\visual studio 2015\Projects\EE Interpreter\EE Interpreter\bin\Debug\EE Interpreter.exe.config
+c:\users\dom\documents\visual studio 2015\Projects\EE Interpreter\EE Interpreter\obj\Debug\EE Interpreter.vbprojResolveAssemblyReference.cache
+c:\users\dom\documents\visual studio 2015\Projects\EE Interpreter\EE Interpreter\obj\Debug\EE_Interpreter.frmMain.resources
+c:\users\dom\documents\visual studio 2015\Projects\EE Interpreter\EE Interpreter\obj\Debug\EE_Interpreter.Resources.resources
+c:\users\dom\documents\visual studio 2015\Projects\EE Interpreter\EE Interpreter\obj\Debug\EE Interpreter.vbproj.GenerateResource.Cache
+c:\users\dom\documents\visual studio 2015\Projects\EE Interpreter\EE Interpreter\obj\Debug\EE Interpreter.xml
+c:\users\dom\documents\visual studio 2015\Projects\EE Interpreter\EE Interpreter\bin\Debug\EE Interpreter.exe
+c:\users\dom\documents\visual studio 2015\Projects\EE Interpreter\EE Interpreter\bin\Debug\EE Interpreter.pdb
+c:\users\dom\documents\visual studio 2015\Projects\EE Interpreter\EE Interpreter\bin\Debug\EE Interpreter.xml
+c:\users\dom\documents\visual studio 2015\Projects\EE Interpreter\EE Interpreter\obj\Debug\EE Interpreter.exe
+c:\users\dom\documents\visual studio 2015\Projects\EE Interpreter\EE Interpreter\obj\Debug\EE Interpreter.pdb

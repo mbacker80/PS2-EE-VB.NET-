@@ -1,0 +1,10 @@
+c:\users\dom\documents\visual studio 2015\Projects\EE Interpreter\EE Interpreter\bin\Release\EE Interpreter.exe.config
+c:\users\dom\documents\visual studio 2015\Projects\EE Interpreter\EE Interpreter\bin\Release\EE Interpreter.exe
+c:\users\dom\documents\visual studio 2015\Projects\EE Interpreter\EE Interpreter\bin\Release\EE Interpreter.pdb
+c:\users\dom\documents\visual studio 2015\Projects\EE Interpreter\EE Interpreter\bin\Release\EE Interpreter.xml
+c:\users\dom\documents\visual studio 2015\Projects\EE Interpreter\EE Interpreter\obj\Release\EE_Interpreter.frmMain.resources
+c:\users\dom\documents\visual studio 2015\Projects\EE Interpreter\EE Interpreter\obj\Release\EE_Interpreter.Resources.resources
+c:\users\dom\documents\visual studio 2015\Projects\EE Interpreter\EE Interpreter\obj\Release\EE Interpreter.vbproj.GenerateResource.Cache
+c:\users\dom\documents\visual studio 2015\Projects\EE Interpreter\EE Interpreter\obj\Release\EE Interpreter.exe
+c:\users\dom\documents\visual studio 2015\Projects\EE Interpreter\EE Interpreter\obj\Release\EE Interpreter.xml
+c:\users\dom\documents\visual studio 2015\Projects\EE Interpreter\EE Interpreter\obj\Release\EE Interpreter.pdb
