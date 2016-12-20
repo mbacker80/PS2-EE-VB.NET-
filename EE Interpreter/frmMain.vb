@@ -94,7 +94,18 @@
     End Sub
 
     Private Sub Button6_Click(sender As Object, e As EventArgs) Handles Button6.Click
+        Dim outp As UInt32, rt As Integer, ret As String
 
+        txtOut.Text = (256 And 255).ToString
+
+        Exit Sub
+        rt = mpAsm.AssembleInstruction(txtIn.Text, outp)
+        If rt < 0 Then
+            txtOut.Text = "syntax error " + rt.ToString
+        Else
+            txtOut.Text = Strings.Right("00000000" + Hex(outp), 8) + vbCrLf +
+                          mpAsm.DisassembleValue(outp)
+        End If
     End Sub
 
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click

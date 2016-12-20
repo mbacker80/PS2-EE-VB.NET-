@@ -361,7 +361,7 @@
                              isBranching = 2
                              GlobalNewAddress = GPr(rc(0)).s32_1
 
-                             GPr(rc(1)).s32_1 = (RevertMemAddress(GlobalIndex * 4, GlobalSpace) + 8)
+                             If rc(1) > 0 Then GPr(rc(1)).s32_1 = (RevertMemAddress(GlobalIndex * 4, GlobalSpace) + 8)
 
                              Return 0
                          End Function '----------jalr
@@ -614,12 +614,12 @@
                              '3-> rs, rt, rd, 
                              If rc(2) = 0 Then Return 0
 
-                             GPr(32).s64_1 = GPr(rc(0)).s32_1 + GPr(rc(1)).s32_1
+                             GPr(32).s64_1 = GPr(rc(0)).u32_1 + GPr(rc(1)).u32_1
                              GPr(32).s64_2 = GPr(rc(0)).s32_2 + GPr(rc(1)).s32_2 + GPr(32).Overflow_1
 
                              If GPr(32).s64_2 > &H7FFFFFFF Or GPr(32).s64_2 < &H80000000 Then Return EXCEPTION_TLB_Overflow
 
-                             GPr(rc(2)).s32_1 = GPr(32).s32_1
+                             GPr(rc(2)).u32_1 = GPr(32).u32_1
                              GPr(rc(2)).s32_2 = GPr(32).s32_2
 
                              Return 0
@@ -629,7 +629,7 @@
                              '3-> rs, rt, rd, 
                              If rc(2) = 0 Then Return 0
 
-                             GPr(rc(2)).s64_1 = GPr(rc(0)).s32_1 + GPr(rc(1)).s32_1
+                             GPr(rc(2)).s64_1 = GPr(rc(0)).u32_1 + GPr(rc(1)).u32_1
                              GPr(rc(2)).s64_2 = GPr(rc(0)).s32_2 + GPr(rc(1)).s32_2 + GPr(rc(2)).Overflow_1
 
                              Return 0
@@ -998,18 +998,25 @@
                               '3-> rs, rt, rd, 
                               If rc(2) = 0 Then Return 0
 
-                              Dim tmp As Int64
+                              Dim tmp As Int64, tmp2 As Int64
 
                               '128 bit shift >> sa
                               GPr(32).u64_4 = Math.DivRem(GPr(rc(0)).u32_4, CLng(2 ^ HIloSA(2).u32_1), tmp)
-                              GPr(32).u64_3 = Math.DivRem(GPr(rc(0)).u32_3 + (tmp * &H100000000), CLng(2 ^ HIloSA(2).u32_1), tmp)
-                              GPr(32).u64_2 = Math.DivRem(GPr(rc(0)).u32_2 + (tmp * &H100000000), CLng(2 ^ HIloSA(2).u32_1), tmp)
-                              GPr(32).u64_1 = Math.DivRem(GPr(rc(0)).u32_1 + (tmp * &H100000000), CLng(2 ^ HIloSA(2).u32_1), tmp)
+                              tmp *= &H100000000 \ CLng(2 ^ HIloSA(2).u32_1)
+                              GPr(32).u64_3 = Math.DivRem(GPr(rc(0)).u32_3, CLng(2 ^ HIloSA(2).u32_1), tmp2) + tmp
+                              tmp2 *= &H100000000 \ CLng(2 ^ HIloSA(2).u32_1)
+                              GPr(32).u64_2 = Math.DivRem(GPr(rc(0)).u32_2, CLng(2 ^ HIloSA(2).u32_1), tmp) + tmp2
+                              tmp *= &H100000000 \ CLng(2 ^ HIloSA(2).u32_1)
+                              GPr(32).u64_1 = Math.DivRem(GPr(rc(0)).u32_1, CLng(2 ^ HIloSA(2).u32_1), tmp2) + tmp
+                              tmp2 *= &H100000000 \ CLng(2 ^ HIloSA(2).u32_1)
 
-                              GPr(rc(2)).u64_4 = Math.DivRem(GPr(rc(1)).u32_4 + (tmp * &H100000000), CLng(2 ^ HIloSA(2).u32_1), tmp)
-                              GPr(rc(2)).u64_3 = Math.DivRem(GPr(rc(1)).u32_3 + (tmp * &H100000000), CLng(2 ^ HIloSA(2).u32_1), tmp)
-                              GPr(rc(2)).u64_2 = Math.DivRem(GPr(rc(1)).u32_2 + (tmp * &H100000000), CLng(2 ^ HIloSA(2).u32_1), tmp)
-                              GPr(rc(2)).u64_1 = Math.DivRem(GPr(rc(1)).u32_1 + (tmp * &H100000000), CLng(2 ^ HIloSA(2).u32_1), tmp)
+                              GPr(rc(2)).u64_4 = Math.DivRem(GPr(rc(1)).u32_4, CLng(2 ^ HIloSA(2).u32_1), tmp) + tmp2
+                              tmp *= &H100000000 \ CLng(2 ^ HIloSA(2).u32_1)
+                              GPr(rc(2)).u64_3 = Math.DivRem(GPr(rc(1)).u32_3, CLng(2 ^ HIloSA(2).u32_1), tmp2) + tmp
+                              tmp2 *= &H100000000 \ CLng(2 ^ HIloSA(2).u32_1)
+                              GPr(rc(2)).u64_2 = Math.DivRem(GPr(rc(1)).u32_2, CLng(2 ^ HIloSA(2).u32_1), tmp) + tmp2
+                              tmp *= &H100000000 \ CLng(2 ^ HIloSA(2).u32_1)
+                              GPr(rc(2)).u64_1 = (GPr(rc(1)).u32_1 \ CLng(2 ^ HIloSA(2).u32_1)) + tmp 'Math.DivRem(GPr(rc(1)).u32_1 + (tmp * &H100000000), CLng(2 ^ HIloSA(2).u32_1), tmp)
 
                               'GPr(rc(2)).u64_2 = Math.DivRem(GPr(rc(0)).u32_2 + (tmp * &H100000000), CLng(2 ^ HIloSA(2).u32_1), tmp)
                               'GPr(rc(2)).u64_1 = ((GPr(rc(0)).u32_1 + (tmp * &H100000000)) \ (2 ^ HIloSA(2).u32_1))
@@ -1379,7 +1386,7 @@
                               End Select
 
                               PSMemory(tRS).W(tAddr) = MemData32.u32
-                              PSMemory(tRS).IC(tAddr) = -1
+                              If PSMemory(tRS).IC(tAddr) <> -5 Then PSMemory(tRS).IC(tAddr) = -1
                               Return 0
                           End Function '----------sb
         asmOp(221).Exec = Function() As Integer ' sh
@@ -1404,7 +1411,7 @@
                               End Select
 
                               PSMemory(tRS).W(tAddr) = MemData32.u32
-                              PSMemory(tRS).IC(tAddr) = -1
+                              If PSMemory(tRS).IC(tAddr) <> -5 Then PSMemory(tRS).IC(tAddr) = -1
                               Return 0
                           End Function '----------sh
         asmOp(238).Exec = Function() As Integer ' sw
@@ -1420,7 +1427,7 @@
                               If (StoreAddr And 3) <> 0 Then Return EXCEPTION_TLB_Load_InstFetch
 
                               PSMemory(tRS).W(tAddr) = GPr(rc(1)).u32_1
-                              PSMemory(tRS).IC(tAddr) = -1
+                              If PSMemory(tRS).IC(tAddr) <> -5 Then PSMemory(tRS).IC(tAddr) = -1
                               Return 0
                           End Function '----------sw
         asmOp(218).Exec = Function() As Integer ' sd
@@ -1439,7 +1446,7 @@
                               PSMemory(tRS).W(tAddr + 1) = GPr(rc(1)).u32_2
 
                               For i = tAddr To tAddr + 1
-                                  PSMemory(tRS).IC(i) = -1
+                                  If PSMemory(tRS).IC(i) <> -5 Then PSMemory(tRS).IC(i) = -1
                               Next
                               Return 0
                           End Function '----------sd
@@ -1461,7 +1468,7 @@
                               PSMemory(tRS).W(tAddr + 3) = GPr(rc(1)).u32_4
 
                               For i = tAddr To tAddr + 3
-                                  PSMemory(tRS).IC(i) = -1
+                                  If PSMemory(tRS).IC(i) <> -5 Then PSMemory(tRS).IC(i) = -1
                               Next
                               Return 0
                           End Function '----------sq
@@ -1801,29 +1808,631 @@
                               '0-> 
                               Return NotImplementedYet
                           End Function '----------sync.p
-
-        '==================================================================== Parallel
-
-        asmOp(124).Exec = Function() As Integer ' pabsh
-                              'pabsh rd, rt
-                              '2-> rt, rd, 
+        asmOp(193).Exec = Function() As Integer ' pref
+                              'pref hint, %i(base)
+                              '3-> base, hint, %i, 
                               Return NotImplementedYet
-                          End Function '----------pabsh
-        asmOp(125).Exec = Function() As Integer ' pabsw
-                              'pabsw rd, rt
-                              '2-> rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------pabsw
+                          End Function '----------pref
+
+        '==================================================================== Parallels
+        '------------------------------------------------------------- Basic Math
         asmOp(126).Exec = Function() As Integer ' paddb
                               'paddb rd, rs, rt
                               '3-> rs, rt, rd, 
-                              Return NotImplementedYet
+                              If rc(2) = 0 Then Return 0
+
+                              GPr(rc(2)).Byte1_1 = (GPr(rc(0)).sByte1_1 + GPr(rc(1)).sByte1_1) And 255
+                              GPr(rc(2)).Byte1_2 = (GPr(rc(0)).sByte1_2 + GPr(rc(1)).sByte1_2) And 255
+                              GPr(rc(2)).Byte1_3 = (GPr(rc(0)).sByte1_3 + GPr(rc(1)).sByte1_3) And 255
+                              GPr(rc(2)).Byte1_4 = (GPr(rc(0)).sByte1_4 + GPr(rc(1)).sByte1_4) And 255
+
+                              GPr(rc(2)).Byte2_1 = (GPr(rc(0)).sByte2_1 + GPr(rc(1)).sByte2_1) And 255
+                              GPr(rc(2)).Byte2_2 = (GPr(rc(0)).sByte2_2 + GPr(rc(1)).sByte2_2) And 255
+                              GPr(rc(2)).Byte2_3 = (GPr(rc(0)).sByte2_3 + GPr(rc(1)).sByte2_3) And 255
+                              GPr(rc(2)).Byte2_4 = (GPr(rc(0)).sByte2_4 + GPr(rc(1)).sByte2_4) And 255
+
+                              GPr(rc(2)).Byte3_1 = (GPr(rc(0)).sByte3_1 + GPr(rc(1)).sByte3_1) And 255
+                              GPr(rc(2)).Byte3_2 = (GPr(rc(0)).sByte3_2 + GPr(rc(1)).sByte3_2) And 255
+                              GPr(rc(2)).Byte3_3 = (GPr(rc(0)).sByte3_3 + GPr(rc(1)).sByte3_3) And 255
+                              GPr(rc(2)).Byte3_4 = (GPr(rc(0)).sByte3_4 + GPr(rc(1)).sByte3_4) And 255
+
+                              GPr(rc(2)).Byte4_1 = (GPr(rc(0)).sByte4_1 + GPr(rc(1)).sByte4_1) And 255
+                              GPr(rc(2)).Byte4_2 = (GPr(rc(0)).sByte4_2 + GPr(rc(1)).sByte4_2) And 255
+                              GPr(rc(2)).Byte4_3 = (GPr(rc(0)).sByte4_3 + GPr(rc(1)).sByte4_3) And 255
+                              GPr(rc(2)).Byte4_4 = (GPr(rc(0)).sByte4_4 + GPr(rc(1)).sByte4_4) And 255
+
+                              Return 0
                           End Function '----------paddb
         asmOp(127).Exec = Function() As Integer ' paddh
                               'paddh rd, rs, rt
                               '3-> rs, rt, rd, 
-                              Return NotImplementedYet
+                              If rc(2) = 0 Then Return 0
+
+                              GPr(rc(2)).Half1_1 = (GPr(rc(0)).sHalf1_1 + GPr(rc(1)).sHalf1_1) And 65535
+                              GPr(rc(2)).Half1_2 = (GPr(rc(0)).sHalf1_2 + GPr(rc(1)).sHalf1_2) And 65535
+
+                              GPr(rc(2)).Half2_1 = (GPr(rc(0)).sHalf2_1 + GPr(rc(1)).sHalf2_1) And 65535
+                              GPr(rc(2)).Half2_2 = (GPr(rc(0)).sHalf2_2 + GPr(rc(1)).sHalf2_2) And 65535
+
+                              GPr(rc(2)).Half3_1 = (GPr(rc(0)).sHalf3_1 + GPr(rc(1)).sHalf3_1) And 65535
+                              GPr(rc(2)).Half3_2 = (GPr(rc(0)).sHalf3_2 + GPr(rc(1)).sHalf3_2) And 65535
+
+                              GPr(rc(2)).Half4_1 = (GPr(rc(0)).sHalf4_1 + GPr(rc(1)).sHalf4_1) And 65535
+                              GPr(rc(2)).Half4_2 = (GPr(rc(0)).sHalf4_2 + GPr(rc(1)).sHalf4_2) And 65535
+
+                              Return 0
                           End Function '----------paddh
+        asmOp(134).Exec = Function() As Integer ' paddw
+                              'paddw rd, rs, rt
+                              '3-> rs, rt, rd, 
+                              If rc(2) = 0 Then Return 0
+
+                              GPr(rc(2)).s64_1 = GPr(rc(0)).s32_1 + GPr(rc(1)).s32_1
+                              GPr(rc(2)).s64_2 = GPr(rc(0)).s32_2 + GPr(rc(1)).s32_2
+                              GPr(rc(2)).s64_3 = GPr(rc(0)).s32_3 + GPr(rc(1)).s32_3
+                              GPr(rc(2)).s64_4 = GPr(rc(0)).s32_4 + GPr(rc(1)).s32_4
+
+                              Return 0
+                          End Function '----------paddw
+        asmOp(205).Exec = Function() As Integer ' psubb
+                              'psubb rd, rs, rt
+                              '3-> rs, rt, rd, 
+                              If rc(2) = 0 Then Return 0
+
+                              GPr(rc(2)).Byte1_1 = (GPr(rc(0)).sByte1_1 - GPr(rc(1)).sByte1_1) And 255
+                              GPr(rc(2)).Byte1_2 = (GPr(rc(0)).sByte1_2 - GPr(rc(1)).sByte1_2) And 255
+                              GPr(rc(2)).Byte1_3 = (GPr(rc(0)).sByte1_3 - GPr(rc(1)).sByte1_3) And 255
+                              GPr(rc(2)).Byte1_4 = (GPr(rc(0)).sByte1_4 - GPr(rc(1)).sByte1_4) And 255
+
+                              GPr(rc(2)).Byte2_1 = (GPr(rc(0)).sByte2_1 - GPr(rc(1)).sByte2_1) And 255
+                              GPr(rc(2)).Byte2_2 = (GPr(rc(0)).sByte2_2 - GPr(rc(1)).sByte2_2) And 255
+                              GPr(rc(2)).Byte2_3 = (GPr(rc(0)).sByte2_3 - GPr(rc(1)).sByte2_3) And 255
+                              GPr(rc(2)).Byte2_4 = (GPr(rc(0)).sByte2_4 - GPr(rc(1)).sByte2_4) And 255
+
+                              GPr(rc(2)).Byte3_1 = (GPr(rc(0)).sByte3_1 - GPr(rc(1)).sByte3_1) And 255
+                              GPr(rc(2)).Byte3_2 = (GPr(rc(0)).sByte3_2 - GPr(rc(1)).sByte3_2) And 255
+                              GPr(rc(2)).Byte3_3 = (GPr(rc(0)).sByte3_3 - GPr(rc(1)).sByte3_3) And 255
+                              GPr(rc(2)).Byte3_4 = (GPr(rc(0)).sByte3_4 - GPr(rc(1)).sByte3_4) And 255
+
+                              GPr(rc(2)).Byte4_1 = (GPr(rc(0)).sByte4_1 - GPr(rc(1)).sByte4_1) And 255
+                              GPr(rc(2)).Byte4_2 = (GPr(rc(0)).sByte4_2 - GPr(rc(1)).sByte4_2) And 255
+                              GPr(rc(2)).Byte4_3 = (GPr(rc(0)).sByte4_3 - GPr(rc(1)).sByte4_3) And 255
+                              GPr(rc(2)).Byte4_4 = (GPr(rc(0)).sByte4_4 - GPr(rc(1)).sByte4_4) And 255
+
+                              Return 0
+                          End Function '----------psubb
+        asmOp(206).Exec = Function() As Integer ' psubh
+                              'psubh rd, rs, rt
+                              '3-> rs, rt, rd, 
+                              If rc(2) = 0 Then Return 0
+
+                              GPr(rc(2)).Half1_1 = (GPr(rc(0)).sHalf1_1 - GPr(rc(1)).sHalf1_1) And 65535
+                              GPr(rc(2)).Half1_2 = (GPr(rc(0)).sHalf1_2 - GPr(rc(1)).sHalf1_2) And 65535
+
+                              GPr(rc(2)).Half2_1 = (GPr(rc(0)).sHalf2_1 - GPr(rc(1)).sHalf2_1) And 65535
+                              GPr(rc(2)).Half2_2 = (GPr(rc(0)).sHalf2_2 - GPr(rc(1)).sHalf2_2) And 65535
+
+                              GPr(rc(2)).Half3_1 = (GPr(rc(0)).sHalf3_1 - GPr(rc(1)).sHalf3_1) And 65535
+                              GPr(rc(2)).Half3_2 = (GPr(rc(0)).sHalf3_2 - GPr(rc(1)).sHalf3_2) And 65535
+
+                              GPr(rc(2)).Half4_1 = (GPr(rc(0)).sHalf4_1 - GPr(rc(1)).sHalf4_1) And 65535
+                              GPr(rc(2)).Half4_2 = (GPr(rc(0)).sHalf4_2 - GPr(rc(1)).sHalf4_2) And 65535
+
+                              Return 0
+                          End Function '----------psubh
+        asmOp(213).Exec = Function() As Integer ' psubw
+                              'psubw rd, rs, rt
+                              '3-> rs, rt, rd, 
+                              If rc(2) = 0 Then Return 0
+
+                              GPr(rc(2)).s64_1 = GPr(rc(0)).s32_1 - GPr(rc(1)).s32_1
+                              GPr(rc(2)).s64_2 = GPr(rc(0)).s32_2 - GPr(rc(1)).s32_2
+                              GPr(rc(2)).s64_3 = GPr(rc(0)).s32_3 - GPr(rc(1)).s32_3
+                              GPr(rc(2)).s64_4 = GPr(rc(0)).s32_4 - GPr(rc(1)).s32_4
+
+                              Return 0
+                          End Function '----------psubw
+
+        '------------------------------------------------------------- Misc Math
+        asmOp(124).Exec = Function() As Integer ' pabsh
+                              'pabsh rd, rt
+                              '2-> rt, rd, 
+                              If rc(1) = 0 Then Return 0
+
+                              GPr(rc(1)).Half1_1 = Math.Abs(GPr(rc(0)).sHalf1_1)
+                              GPr(rc(1)).Half1_2 = Math.Abs(GPr(rc(0)).sHalf1_2)
+
+                              GPr(rc(1)).Half2_1 = Math.Abs(GPr(rc(0)).sHalf2_1)
+                              GPr(rc(1)).Half2_2 = Math.Abs(GPr(rc(0)).sHalf2_2)
+
+                              GPr(rc(1)).Half3_1 = Math.Abs(GPr(rc(0)).sHalf3_1)
+                              GPr(rc(1)).Half3_2 = Math.Abs(GPr(rc(0)).sHalf3_2)
+
+                              GPr(rc(1)).Half4_1 = Math.Abs(GPr(rc(0)).sHalf4_1)
+                              GPr(rc(1)).Half4_2 = Math.Abs(GPr(rc(0)).sHalf4_2)
+
+                              Return 0
+                          End Function '----------pabsh
+        asmOp(125).Exec = Function() As Integer ' pabsw
+                              'pabsw rd, rt
+                              '2-> rt, rd, 
+                              If rc(1) = 0 Then Return 0
+
+                              GPr(rc(1)).u32_1 = Math.Abs(GPr(rc(0)).s32_1)
+                              GPr(rc(1)).u32_2 = Math.Abs(GPr(rc(0)).s32_2)
+                              GPr(rc(1)).u32_3 = Math.Abs(GPr(rc(0)).s32_3)
+                              GPr(rc(1)).u32_4 = Math.Abs(GPr(rc(0)).s32_4)
+
+                              Return 0
+                          End Function '----------pabsw
+
+        '------------------------------------------------------------- Hard Math
+
+        '------------------------------------------------------------- Bitwise
+        asmOp(136).Exec = Function() As Integer ' pand
+                              'pand rd, rs, rt
+                              '3-> rs, rt, rd, 
+                              If rc(2) = 0 Then Return 0
+
+                              GPr(rc(2)).u32_1 = GPr(rc(0)).u32_1 And GPr(rc(1)).u32_1
+                              GPr(rc(2)).u32_2 = GPr(rc(0)).u32_2 And GPr(rc(1)).u32_2
+                              GPr(rc(2)).u32_3 = GPr(rc(0)).u32_3 And GPr(rc(1)).u32_3
+                              GPr(rc(2)).u32_4 = GPr(rc(0)).u32_4 And GPr(rc(1)).u32_4
+
+                              Return 0
+                          End Function '----------pand
+        asmOp(188).Exec = Function() As Integer ' por
+                              'por rd, rs, rt
+                              '3-> rs, rt, rd, 
+                              If rc(2) = 0 Then Return 0
+
+                              GPr(rc(2)).u32_1 = GPr(rc(0)).u32_1 Or GPr(rc(1)).u32_1
+                              GPr(rc(2)).u32_2 = GPr(rc(0)).u32_2 Or GPr(rc(1)).u32_2
+                              GPr(rc(2)).u32_3 = GPr(rc(0)).u32_3 Or GPr(rc(1)).u32_3
+                              GPr(rc(2)).u32_4 = GPr(rc(0)).u32_4 Or GPr(rc(1)).u32_4
+
+                              Return 0
+                          End Function '----------por
+        asmOp(187).Exec = Function() As Integer ' pnor
+                              'pnor rd, rs, rt
+                              '3-> rs, rt, rd, 
+                              If rc(2) = 0 Then Return 0
+
+                              GPr(rc(2)).u32_1 = Not GPr(rc(0)).u32_1 Or GPr(rc(1)).u32_1
+                              GPr(rc(2)).u32_2 = Not GPr(rc(0)).u32_2 Or GPr(rc(1)).u32_2
+                              GPr(rc(2)).u32_3 = Not GPr(rc(0)).u32_3 Or GPr(rc(1)).u32_3
+                              GPr(rc(2)).u32_4 = Not GPr(rc(0)).u32_4 Or GPr(rc(1)).u32_4
+
+                              Return 0
+                          End Function '----------pnor
+        asmOp(214).Exec = Function() As Integer ' pxor
+                              'pxor rd, rs, rt
+                              '3-> rs, rt, rd, 
+                              If rc(2) = 0 Then Return 0
+
+                              GPr(rc(2)).u32_1 = GPr(rc(0)).u32_1 Xor GPr(rc(1)).u32_1
+                              GPr(rc(2)).u32_2 = GPr(rc(0)).u32_2 Xor GPr(rc(1)).u32_2
+                              GPr(rc(2)).u32_3 = GPr(rc(0)).u32_3 Xor GPr(rc(1)).u32_3
+                              GPr(rc(2)).u32_4 = GPr(rc(0)).u32_4 Xor GPr(rc(1)).u32_4
+
+                              Return 0
+                          End Function '----------pxor
+        asmOp(140).Exec = Function() As Integer ' pcgtb
+                              'pcgtb rd, rs, rt
+                              '3-> rs, rt, rd, 
+                              If rc(2) = 0 Then Return 0
+
+                              GPr(rc(2)).sByte1_1 = GPr(rc(0)).sByte1_1 > GPr(rc(1)).sByte1_1
+                              GPr(rc(2)).sByte1_2 = GPr(rc(0)).sByte1_2 > GPr(rc(1)).sByte1_2
+                              GPr(rc(2)).sByte1_3 = GPr(rc(0)).sByte1_3 > GPr(rc(1)).sByte1_3
+                              GPr(rc(2)).sByte1_4 = GPr(rc(0)).sByte1_4 > GPr(rc(1)).sByte1_4
+
+                              GPr(rc(2)).sByte2_1 = GPr(rc(0)).sByte2_1 > GPr(rc(1)).sByte2_1
+                              GPr(rc(2)).sByte2_2 = GPr(rc(0)).sByte2_2 > GPr(rc(1)).sByte2_2
+                              GPr(rc(2)).sByte2_3 = GPr(rc(0)).sByte2_3 > GPr(rc(1)).sByte2_3
+                              GPr(rc(2)).sByte2_4 = GPr(rc(0)).sByte2_4 > GPr(rc(1)).sByte2_4
+
+                              GPr(rc(2)).sByte3_1 = GPr(rc(0)).sByte3_1 > GPr(rc(1)).sByte3_1
+                              GPr(rc(2)).sByte3_2 = GPr(rc(0)).sByte3_2 > GPr(rc(1)).sByte3_2
+                              GPr(rc(2)).sByte3_3 = GPr(rc(0)).sByte3_3 > GPr(rc(1)).sByte3_3
+                              GPr(rc(2)).sByte3_4 = GPr(rc(0)).sByte3_4 > GPr(rc(1)).sByte3_4
+
+                              GPr(rc(2)).sByte4_1 = GPr(rc(0)).sByte4_1 > GPr(rc(1)).sByte4_1
+                              GPr(rc(2)).sByte4_2 = GPr(rc(0)).sByte4_2 > GPr(rc(1)).sByte4_2
+                              GPr(rc(2)).sByte4_3 = GPr(rc(0)).sByte4_3 > GPr(rc(1)).sByte4_3
+                              GPr(rc(2)).sByte4_4 = GPr(rc(0)).sByte4_4 > GPr(rc(1)).sByte4_4
+
+                              Return 0
+                          End Function '----------pcgtb
+        asmOp(141).Exec = Function() As Integer ' pcgth
+                              'pcgth rd, rs, rt
+                              '3-> rs, rt, rd, 
+                              If rc(2) = 0 Then Return 0
+
+                              GPr(rc(2)).sHalf1_1 = GPr(rc(0)).sHalf1_1 > GPr(rc(1)).sHalf1_1
+                              GPr(rc(2)).sHalf1_2 = GPr(rc(0)).sHalf1_2 > GPr(rc(1)).sHalf1_2
+                              GPr(rc(2)).sHalf2_1 = GPr(rc(0)).sHalf2_1 > GPr(rc(1)).sHalf2_1
+                              GPr(rc(2)).sHalf2_2 = GPr(rc(0)).sHalf2_2 > GPr(rc(1)).sHalf2_2
+                              GPr(rc(2)).sHalf3_1 = GPr(rc(0)).sHalf3_1 > GPr(rc(1)).sHalf3_1
+                              GPr(rc(2)).sHalf3_2 = GPr(rc(0)).sHalf3_2 > GPr(rc(1)).sHalf3_2
+                              GPr(rc(2)).sHalf4_1 = GPr(rc(0)).sHalf4_1 > GPr(rc(1)).sHalf4_1
+                              GPr(rc(2)).sHalf4_2 = GPr(rc(0)).sHalf4_2 > GPr(rc(1)).sHalf4_2
+
+                              Return 0
+                          End Function '----------pcgth
+        asmOp(142).Exec = Function() As Integer ' pcgtw
+                              'pcgtw rd, rs, rt
+                              '3-> rs, rt, rd, 
+                              If rc(2) = 0 Then Return 0
+
+                              GPr(rc(2)).s32_1 = GPr(rc(0)).s32_1 > GPr(rc(1)).s32_1
+                              GPr(rc(2)).s32_2 = GPr(rc(0)).s32_2 > GPr(rc(1)).s32_2
+                              GPr(rc(2)).s32_3 = GPr(rc(0)).s32_3 > GPr(rc(1)).s32_3
+                              GPr(rc(2)).s32_4 = GPr(rc(0)).s32_4 > GPr(rc(1)).s32_4
+
+                              Return 0
+                          End Function '----------pcgtw
+
+        '------------------------------------------------------------- Shifts
+        asmOp(196).Exec = Function() As Integer ' psllh
+                              'psllh rd, rt, sa
+                              '3-> rt, rd, sa, 
+                              If rc(1) = 0 Then Return 0
+
+                              GPr(rc(1)).Half1_1 = (GPr(rc(0)).Half1_1 * (2 ^ rc(2))) And 65535
+                              GPr(rc(1)).Half1_2 = (GPr(rc(0)).Half1_2 * (2 ^ rc(2))) And 65535
+
+                              GPr(rc(1)).Half2_1 = (GPr(rc(0)).Half2_1 * (2 ^ rc(2))) And 65535
+                              GPr(rc(1)).Half2_2 = (GPr(rc(0)).Half2_2 * (2 ^ rc(2))) And 65535
+
+                              GPr(rc(1)).Half3_1 = (GPr(rc(0)).Half3_1 * (2 ^ rc(2))) And 65535
+                              GPr(rc(1)).Half3_2 = (GPr(rc(0)).Half3_2 * (2 ^ rc(2))) And 65535
+
+                              GPr(rc(1)).Half4_1 = (GPr(rc(0)).Half4_1 * (2 ^ rc(2))) And 65535
+                              GPr(rc(1)).Half4_2 = (GPr(rc(0)).Half4_2 * (2 ^ rc(2))) And 65535
+
+                              Return 0
+                          End Function '----------psllh
+        asmOp(198).Exec = Function() As Integer ' psllw
+                              'psllw rd, rt, sa
+                              '3-> rt, rd, sa, 
+                              If rc(1) = 0 Then Return 0
+
+                              GPr(rc(1)).u32_1 = (GPr(rc(0)).u32_1 * (2 ^ rc(2))) And 4294967295
+                              GPr(rc(1)).u32_2 = (GPr(rc(0)).u32_2 * (2 ^ rc(2))) And 4294967295
+                              GPr(rc(1)).u32_3 = (GPr(rc(0)).u32_3 * (2 ^ rc(2))) And 4294967295
+                              GPr(rc(1)).u32_4 = (GPr(rc(0)).u32_4 * (2 ^ rc(2))) And 4294967295
+
+                              Return 0
+                          End Function '----------psllw
+        asmOp(202).Exec = Function() As Integer ' psrlh
+                              'psrlh rd, rt, sa
+                              '3-> rt, rd, sa, 
+                              If rc(1) = 0 Then Return 0
+
+                              GPr(rc(1)).Half1_1 = (GPr(rc(0)).Half1_1 * (2 ^ rc(2))) And 65535
+                              GPr(rc(1)).Half1_2 = (GPr(rc(0)).Half1_2 * (2 ^ rc(2))) And 65535
+
+                              GPr(rc(1)).Half2_1 = (GPr(rc(0)).Half2_1 * (2 ^ rc(2))) And 65535
+                              GPr(rc(1)).Half2_2 = (GPr(rc(0)).Half2_2 * (2 ^ rc(2))) And 65535
+
+                              GPr(rc(1)).Half3_1 = (GPr(rc(0)).Half3_1 * (2 ^ rc(2))) And 65535
+                              GPr(rc(1)).Half3_2 = (GPr(rc(0)).Half3_2 * (2 ^ rc(2))) And 65535
+
+                              GPr(rc(1)).Half4_1 = (GPr(rc(0)).Half4_1 * (2 ^ rc(2))) And 65535
+                              GPr(rc(1)).Half4_2 = (GPr(rc(0)).Half4_2 * (2 ^ rc(2))) And 65535
+
+                              Return 0
+                          End Function '----------psrlh
+        asmOp(204).Exec = Function() As Integer ' psrlw
+                              'psrlw rd, rt, sa
+                              '3-> rt, rd, sa, 
+                              If rc(1) = 0 Then Return 0
+
+                              GPr(rc(1)).u32_1 = (GPr(rc(0)).u32_1 \ (2 ^ rc(2)))
+                              GPr(rc(1)).u32_2 = (GPr(rc(0)).u32_2 \ (2 ^ rc(2)))
+                              GPr(rc(1)).u32_3 = (GPr(rc(0)).u32_3 \ (2 ^ rc(2)))
+                              GPr(rc(1)).u32_4 = (GPr(rc(0)).u32_4 \ (2 ^ rc(2)))
+
+                              Return 0
+                          End Function '----------psrlw
+
+        asmOp(197).Exec = Function() As Integer ' psllvw
+                              'psllvw rd, rt, rs
+                              '3-> rs, rt, rd, 
+                              Return NotImplementedYet
+                          End Function '----------psllvw
+        asmOp(203).Exec = Function() As Integer ' psrlvw
+                              'psrlvw rd, rt, rs
+                              '3-> rs, rt, rd, 
+                              Return NotImplementedYet
+                          End Function '----------psrlvw
+        asmOp(199).Exec = Function() As Integer ' psrah
+                              'psrah rd, rt, sa
+                              '3-> rt, rd, sa, 
+                              Return NotImplementedYet
+                          End Function '----------psrah
+        asmOp(200).Exec = Function() As Integer ' psravw
+                              'psravw rd, rt, rs
+                              '3-> rs, rt, rd, 
+                              Return NotImplementedYet
+                          End Function '----------psravw
+        asmOp(201).Exec = Function() As Integer ' psraw
+                              'psraw rd, rt, sa
+                              '3-> rt, rd, sa, 
+                              Return NotImplementedYet
+                          End Function '----------psraw
+
+        '------------------------------------------------------------- Extends
+        asmOp(154).Exec = Function() As Integer ' pextlb
+                              'pextlb rd, rs, rt
+                              '3-> rs, rt, rd, 
+                              If rc(2) = 0 Then Return 0
+
+                              GPr(rc(2)).Byte1_1 = GPr(rc(1)).Byte1_1
+                              GPr(rc(2)).Byte1_2 = GPr(rc(0)).Byte1_1
+
+                              GPr(rc(2)).Byte1_3 = GPr(rc(1)).Byte1_2
+                              GPr(rc(2)).Byte1_4 = GPr(rc(0)).Byte1_2
+
+                              GPr(rc(2)).Byte2_1 = GPr(rc(1)).Byte1_3
+                              GPr(rc(2)).Byte2_2 = GPr(rc(0)).Byte1_3
+
+                              GPr(rc(2)).Byte2_3 = GPr(rc(1)).Byte1_4
+                              GPr(rc(2)).Byte2_4 = GPr(rc(0)).Byte1_4
+
+                              GPr(rc(2)).Byte3_1 = GPr(rc(1)).Byte2_1
+                              GPr(rc(2)).Byte3_2 = GPr(rc(0)).Byte2_1
+
+                              GPr(rc(2)).Byte3_3 = GPr(rc(1)).Byte2_2
+                              GPr(rc(2)).Byte3_4 = GPr(rc(0)).Byte2_2
+
+                              GPr(rc(2)).Byte4_1 = GPr(rc(1)).Byte2_3
+                              GPr(rc(2)).Byte4_2 = GPr(rc(0)).Byte2_3
+
+                              GPr(rc(2)).Byte4_3 = GPr(rc(1)).Byte2_4
+                              GPr(rc(2)).Byte4_4 = GPr(rc(0)).Byte2_4
+
+                              Return 0
+                          End Function '----------pextlb
+        asmOp(155).Exec = Function() As Integer ' pextlh
+                              'pextlh rd, rs, rt
+                              '3-> rs, rt, rd, 
+                              If rc(2) = 0 Then Return 0
+
+                              GPr(rc(2)).Half1_1 = GPr(rc(1)).Half1_1
+                              GPr(rc(2)).Half1_2 = GPr(rc(0)).Half1_1
+
+                              GPr(rc(2)).Half2_1 = GPr(rc(1)).Half1_2
+                              GPr(rc(2)).Half2_2 = GPr(rc(0)).Half1_2
+
+                              GPr(rc(2)).Half3_1 = GPr(rc(1)).Half2_1
+                              GPr(rc(2)).Half3_2 = GPr(rc(0)).Half2_1
+
+                              GPr(rc(2)).Half4_1 = GPr(rc(1)).Half2_2
+                              GPr(rc(2)).Half4_2 = GPr(rc(0)).Half2_2
+
+                              Return 0
+                          End Function '----------pextlh
+        asmOp(156).Exec = Function() As Integer ' pextlw
+                              'pextlw rd, rs, rt
+                              '3-> rs, rt, rd, 
+                              If rc(2) = 0 Then Return 0
+
+                              GPr(rc(2)).u32_1 = GPr(rc(1)).u32_1
+                              GPr(rc(2)).u32_2 = GPr(rc(0)).u32_1
+                              GPr(rc(2)).u32_3 = GPr(rc(1)).u32_2
+                              GPr(rc(2)).u32_4 = GPr(rc(0)).u32_2
+
+                              Return 0
+                          End Function '----------pextlw
+        asmOp(157).Exec = Function() As Integer ' pextub
+                              'pextub rd, rs, rt
+                              '3-> rs, rt, rd, 
+                              If rc(2) = 0 Then Return 0
+
+                              GPr(rc(2)).Byte1_1 = GPr(rc(1)).Byte3_1
+                              GPr(rc(2)).Byte1_2 = GPr(rc(0)).Byte3_1
+
+                              GPr(rc(2)).Byte1_3 = GPr(rc(1)).Byte3_2
+                              GPr(rc(2)).Byte1_4 = GPr(rc(0)).Byte3_2
+
+                              GPr(rc(2)).Byte2_1 = GPr(rc(1)).Byte3_3
+                              GPr(rc(2)).Byte2_2 = GPr(rc(0)).Byte3_3
+
+                              GPr(rc(2)).Byte2_3 = GPr(rc(1)).Byte3_4
+                              GPr(rc(2)).Byte2_4 = GPr(rc(0)).Byte3_4
+
+                              GPr(rc(2)).Byte3_1 = GPr(rc(1)).Byte4_1
+                              GPr(rc(2)).Byte3_2 = GPr(rc(0)).Byte4_1
+
+                              GPr(rc(2)).Byte3_3 = GPr(rc(1)).Byte4_2
+                              GPr(rc(2)).Byte3_4 = GPr(rc(0)).Byte4_2
+
+                              GPr(rc(2)).Byte4_1 = GPr(rc(1)).Byte4_3
+                              GPr(rc(2)).Byte4_2 = GPr(rc(0)).Byte4_3
+
+                              GPr(rc(2)).Byte4_3 = GPr(rc(1)).Byte4_4
+                              GPr(rc(2)).Byte4_4 = GPr(rc(0)).Byte4_4
+
+                              Return 0
+                          End Function '----------pextub
+        asmOp(158).Exec = Function() As Integer ' pextuh
+                              'pextuh rd, rs, rt
+                              '3-> rs, rt, rd, 
+                              If rc(2) = 0 Then Return 0
+
+                              GPr(rc(2)).Half1_1 = GPr(rc(1)).Half3_1
+                              GPr(rc(2)).Half1_2 = GPr(rc(0)).Half3_1
+
+                              GPr(rc(2)).Half2_1 = GPr(rc(1)).Half3_2
+                              GPr(rc(2)).Half2_2 = GPr(rc(0)).Half3_2
+
+                              GPr(rc(2)).Half3_1 = GPr(rc(1)).Half4_1
+                              GPr(rc(2)).Half3_2 = GPr(rc(0)).Half4_1
+
+                              GPr(rc(2)).Half4_1 = GPr(rc(1)).Half4_2
+                              GPr(rc(2)).Half4_2 = GPr(rc(0)).Half4_2
+
+                              Return 0
+                          End Function '----------pextuh
+        asmOp(159).Exec = Function() As Integer ' pextuw
+                              'pextuw rd, rs, rt
+                              '3-> rs, rt, rd, 
+                              If rc(2) = 0 Then Return 0
+
+                              GPr(rc(2)).u32_1 = GPr(rc(1)).u32_3
+                              GPr(rc(2)).u32_2 = GPr(rc(0)).u32_3
+                              GPr(rc(2)).u32_3 = GPr(rc(1)).u32_4
+                              GPr(rc(2)).u32_4 = GPr(rc(0)).u32_4
+
+                              Return 0
+                          End Function '----------pextuw
+
+        asmOp(153).Exec = Function() As Integer ' pext5
+                              'pext5 rd, rt
+                              '2-> rt, rd, 
+                              Return NotImplementedYet
+                          End Function '----------pext5
+
+        '------------------------------------------------------------- Data Rotation
+        asmOp(195).Exec = Function() As Integer ' prot3w
+                              'prot3w rd, rt
+                              '2-> rt, rd, 
+                              If rc(1) = 0 Then Return 0
+
+                              GPr(rc(1)).u32_1 = GPr(rc(0)).u32_2
+                              GPr(rc(1)).u32_2 = GPr(rc(0)).u32_3
+                              GPr(rc(1)).u32_3 = GPr(rc(0)).u32_1
+                              GPr(rc(1)).u32_4 = GPr(rc(0)).u32_4
+
+                              Return 0
+                          End Function '----------prot3w
+        asmOp(194).Exec = Function() As Integer ' prevh
+                              'prevh rd, rt
+                              '2-> rt, rd, 
+                              If rc(1) = 0 Then Return 0
+
+                              GPr(rc(1)).Half1_1 = GPr(rc(0)).Half2_2
+                              GPr(rc(1)).Half1_2 = GPr(rc(0)).Half2_1
+                              GPr(rc(1)).Half2_1 = GPr(rc(0)).Half1_2
+                              GPr(rc(1)).Half2_2 = GPr(rc(0)).Half1_1
+
+                              GPr(rc(1)).Half3_1 = GPr(rc(0)).Half4_2
+                              GPr(rc(1)).Half3_2 = GPr(rc(0)).Half4_1
+                              GPr(rc(1)).Half4_1 = GPr(rc(0)).Half3_2
+                              GPr(rc(1)).Half4_2 = GPr(rc(0)).Half3_1
+
+                              Return 0
+                          End Function '----------prevh
+        asmOp(143).Exec = Function() As Integer ' pcpyh
+                              'pcpyh rd, rt
+                              '2-> rt, rd, 
+                              If rc(1) = 0 Then Return 0
+
+                              GPr(rc(1)).Half1_1 = GPr(rc(0)).Half1_1
+                              GPr(rc(1)).Half1_2 = GPr(rc(0)).Half1_1
+                              GPr(rc(1)).Half2_1 = GPr(rc(0)).Half1_1
+                              GPr(rc(1)).Half2_2 = GPr(rc(0)).Half1_1
+
+                              GPr(rc(1)).Half3_1 = GPr(rc(0)).Half3_1
+                              GPr(rc(1)).Half3_2 = GPr(rc(0)).Half3_1
+                              GPr(rc(1)).Half4_1 = GPr(rc(0)).Half3_1
+                              GPr(rc(1)).Half4_2 = GPr(rc(0)).Half3_1
+
+                              Return 0
+                          End Function '----------pcpyh
+        asmOp(144).Exec = Function() As Integer ' pcpyld
+                              'pcpyld rd, rs, rt
+                              '3-> rs, rt, rd, 
+                              If rc(2) = 0 Then Return 0
+
+                              GPr(rc(2)).u32_1 = GPr(rc(1)).u32_1
+                              GPr(rc(2)).u32_2 = GPr(rc(1)).u32_2
+
+                              GPr(rc(2)).u32_3 = GPr(rc(0)).u32_1
+                              GPr(rc(2)).u32_4 = GPr(rc(0)).u32_2
+
+                              Return 0
+                          End Function '----------pcpyld
+        asmOp(145).Exec = Function() As Integer ' pcpyud
+                              'pcpyud rd, rs, rt
+                              '3-> rs, rt, rd, 
+                              If rc(2) = 0 Then Return 0
+
+                              GPr(rc(2)).u32_1 = GPr(rc(0)).u32_3
+                              GPr(rc(2)).u32_2 = GPr(rc(0)).u32_4
+
+                              GPr(rc(2)).u32_3 = GPr(rc(1)).u32_3
+                              GPr(rc(2)).u32_4 = GPr(rc(1)).u32_4
+
+                              Return 0
+                          End Function '----------pcpyud
+
+        '------------------------------------------------------------- Data Packing
+        asmOp(190).Exec = Function() As Integer ' ppacb
+                              'ppacb rd, rs, rt
+                              '3-> rs, rt, rd, 
+                              If rc(2) = 0 Then Return 0
+                              
+                              GPr(rc(2)).Byte1_1 = GPr(rc(1)).Byte1_1
+                              GPr(rc(2)).Byte1_2 = GPr(rc(1)).Byte1_3
+                              GPr(rc(2)).Byte1_3 = GPr(rc(1)).Byte2_1
+                              GPr(rc(2)).Byte1_4 = GPr(rc(1)).Byte2_3
+                              GPr(rc(2)).Byte2_1 = GPr(rc(1)).Byte3_1
+                              GPr(rc(2)).Byte2_2 = GPr(rc(1)).Byte3_3
+                              GPr(rc(2)).Byte2_3 = GPr(rc(1)).Byte4_1
+                              GPr(rc(2)).Byte2_4 = GPr(rc(1)).Byte4_3
+
+                              GPr(rc(2)).Byte3_1 = GPr(rc(0)).Byte1_1
+                              GPr(rc(2)).Byte3_2 = GPr(rc(0)).Byte1_3
+                              GPr(rc(2)).Byte3_3 = GPr(rc(0)).Byte2_1
+                              GPr(rc(2)).Byte3_4 = GPr(rc(0)).Byte2_3
+                              GPr(rc(2)).Byte4_1 = GPr(rc(0)).Byte3_1
+                              GPr(rc(2)).Byte4_2 = GPr(rc(0)).Byte3_3
+                              GPr(rc(2)).Byte4_3 = GPr(rc(0)).Byte4_1
+                              GPr(rc(2)).Byte4_4 = GPr(rc(0)).Byte4_3
+
+                              Return 0
+                          End Function '----------ppacb
+        asmOp(191).Exec = Function() As Integer ' ppach
+                              'ppach rd, rs, rt
+                              '3-> rs, rt, rd, 
+                              If rc(2) = 0 Then Return 0
+
+                              GPr(rc(2)).Half1_1 = GPr(rc(1)).Half1_1
+                              GPr(rc(2)).Half1_2 = GPr(rc(1)).Half2_1
+                              GPr(rc(2)).Half2_1 = GPr(rc(1)).Half3_1
+                              GPr(rc(2)).Half2_2 = GPr(rc(1)).Half4_1
+
+                              GPr(rc(2)).Half3_1 = GPr(rc(0)).Half1_1
+                              GPr(rc(2)).Half3_2 = GPr(rc(0)).Half2_1
+                              GPr(rc(2)).Half4_1 = GPr(rc(0)).Half3_1
+                              GPr(rc(2)).Half4_2 = GPr(rc(0)).Half4_1
+
+                              Return 0
+                          End Function '----------ppach
+        asmOp(192).Exec = Function() As Integer ' ppacw
+                              'ppacw rd, rs, rt
+                              '3-> rs, rt, rd, 
+                              If rc(2) = 0 Then Return 0
+
+                              GPr(rc(2)).u32_1 = GPr(rc(1)).u32_1
+                              GPr(rc(2)).u32_2 = GPr(rc(1)).u32_3
+
+                              GPr(rc(2)).u32_3 = GPr(rc(0)).u32_1
+                              GPr(rc(2)).u32_4 = GPr(rc(0)).u32_3
+
+                              Return 0
+                          End Function '----------ppacw
+
+        asmOp(189).Exec = Function() As Integer ' ppac5
+                              'ppac5 rd, rt
+                              '2-> rt, rd, 
+                              Return NotImplementedYet
+                          End Function '----------ppac5
+
+
         asmOp(128).Exec = Function() As Integer ' paddsb
                               'paddsb rd, rs, rt
                               '3-> rs, rt, rd, 
@@ -1854,21 +2463,11 @@
                               '3-> rs, rt, rd, 
                               Return NotImplementedYet
                           End Function '----------padduw
-        asmOp(134).Exec = Function() As Integer ' paddw
-                              'paddw rd, rs, rt
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------paddw
         asmOp(135).Exec = Function() As Integer ' padsbh
                               'padsbh rd, rs, rt
                               '3-> rs, rt, rd, 
                               Return NotImplementedYet
                           End Function '----------padsbh
-        asmOp(136).Exec = Function() As Integer ' pand
-                              'pand rd, rs, rt
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------pand
         asmOp(137).Exec = Function() As Integer ' pceqb
                               'pceqb rd, rs, rt
                               '3-> rs, rt, rd, 
@@ -1884,36 +2483,6 @@
                               '3-> rs, rt, rd, 
                               Return NotImplementedYet
                           End Function '----------pceqw
-        asmOp(140).Exec = Function() As Integer ' pcgtb
-                              'pcgtb rd, rs, rt
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------pcgtb
-        asmOp(141).Exec = Function() As Integer ' pcgth
-                              'pcgth rd, rs, rt
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------pcgth
-        asmOp(142).Exec = Function() As Integer ' pcgtw
-                              'pcgtw rd, rs, rt
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------pcgtw
-        asmOp(143).Exec = Function() As Integer ' pcpyh
-                              'pcpyh rd, rt
-                              '2-> rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------pcpyh
-        asmOp(144).Exec = Function() As Integer ' pcpyld
-                              'pcpyld rd, rs, rt
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------pcpyld
-        asmOp(145).Exec = Function() As Integer ' pcpyud
-                              'pcpyud rd, rs, rt
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------pcpyud
         asmOp(146).Exec = Function() As Integer ' pdivbw
                               'pdivbw rs, rt
                               '2-> rs, rt, 
@@ -1949,41 +2518,6 @@
                               '2-> rt, rd, 
                               Return NotImplementedYet
                           End Function '----------pexew
-        asmOp(153).Exec = Function() As Integer ' pext5
-                              'pext5 rd, rt
-                              '2-> rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------pext5
-        asmOp(154).Exec = Function() As Integer ' pextlb
-                              'pextlb rd, rs, rt
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------pextlb
-        asmOp(155).Exec = Function() As Integer ' pextlh
-                              'pextlh rd, rs, rt
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------pextlh
-        asmOp(156).Exec = Function() As Integer ' pextlw
-                              'pextlw rd, rs, rt
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------pextlw
-        asmOp(157).Exec = Function() As Integer ' pextub
-                              'pextub rd, rs, rt
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------pextub
-        asmOp(158).Exec = Function() As Integer ' pextuh
-                              'pextuh rd, rs, rt
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------pextuh
-        asmOp(159).Exec = Function() As Integer ' pextuw
-                              'pextuw rd, rs, rt
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------pextuw
         asmOp(160).Exec = Function() As Integer ' phmadh
                               'phmadh rd, rs, rt
                               '3-> rs, rt, rd, 
@@ -2119,106 +2653,6 @@
                               '3-> rs, rt, rd, 
                               Return NotImplementedYet
                           End Function '----------pmultw
-        asmOp(187).Exec = Function() As Integer ' pnor
-                              'pnor rd, rs, rt
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------pnor
-        asmOp(188).Exec = Function() As Integer ' por
-                              'por rd, rs, rt
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------por
-        asmOp(189).Exec = Function() As Integer ' ppac5
-                              'ppac5 rd, rt
-                              '2-> rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------ppac5
-        asmOp(190).Exec = Function() As Integer ' ppacb
-                              'ppacb rd, rs, rt
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------ppacb
-        asmOp(191).Exec = Function() As Integer ' ppach
-                              'ppach rd, rs, rt
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------ppach
-        asmOp(192).Exec = Function() As Integer ' ppacw
-                              'ppacw rd, rs, rt
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------ppacw
-        asmOp(193).Exec = Function() As Integer ' pref
-                              'pref hint, %i(base)
-                              '3-> base, hint, %i, 
-                              Return NotImplementedYet
-                          End Function '----------pref
-        asmOp(194).Exec = Function() As Integer ' prevh
-                              'prevh rd, rt
-                              '2-> rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------prevh
-        asmOp(195).Exec = Function() As Integer ' prot3w
-                              'prot3w rd, rt
-                              '2-> rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------prot3w
-        asmOp(196).Exec = Function() As Integer ' psllh
-                              'psllh rd, rt, sa
-                              '3-> rt, rd, sa, 
-                              Return NotImplementedYet
-                          End Function '----------psllh
-        asmOp(197).Exec = Function() As Integer ' psllvw
-                              'psllvw rd, rt, rs
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------psllvw
-        asmOp(198).Exec = Function() As Integer ' psllw
-                              'psllw rd, rt, sa
-                              '3-> rt, rd, sa, 
-                              Return NotImplementedYet
-                          End Function '----------psllw
-        asmOp(199).Exec = Function() As Integer ' psrah
-                              'psrah rd, rt, sa
-                              '3-> rt, rd, sa, 
-                              Return NotImplementedYet
-                          End Function '----------psrah
-        asmOp(200).Exec = Function() As Integer ' psravw
-                              'psravw rd, rt, rs
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------psravw
-        asmOp(201).Exec = Function() As Integer ' psraw
-                              'psraw rd, rt, sa
-                              '3-> rt, rd, sa, 
-                              Return NotImplementedYet
-                          End Function '----------psraw
-        asmOp(202).Exec = Function() As Integer ' psrlh
-                              'psrlh rd, rt, sa
-                              '3-> rt, rd, sa, 
-                              Return NotImplementedYet
-                          End Function '----------psrlh
-        asmOp(203).Exec = Function() As Integer ' psrlvw
-                              'psrlvw rd, rt, rs
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------psrlvw
-        asmOp(204).Exec = Function() As Integer ' psrlw
-                              'psrlw rd, rt, sa
-                              '3-> rt, rd, sa, 
-                              Return NotImplementedYet
-                          End Function '----------psrlw
-        asmOp(205).Exec = Function() As Integer ' psubb
-                              'psubb rd, rs, rt
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------psubb
-        asmOp(206).Exec = Function() As Integer ' psubh
-                              'psubh rd, rs, rt
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------psubh
         asmOp(207).Exec = Function() As Integer ' psubsb
                               'psubsb rd, rs, rt
                               '3-> rs, rt, rd, 
@@ -2249,16 +2683,6 @@
                               '3-> rs, rt, rd, 
                               Return NotImplementedYet
                           End Function '----------psubuw
-        asmOp(213).Exec = Function() As Integer ' psubw
-                              'psubw rd, rs, rt
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------psubw
-        asmOp(214).Exec = Function() As Integer ' pxor
-                              'pxor rd, rs, rt
-                              '3-> rs, rt, rd, 
-                              Return NotImplementedYet
-                          End Function '----------pxor
 
         '==================================================================== Traps
         asmOp(245).Exec = Function() As Integer ' teq

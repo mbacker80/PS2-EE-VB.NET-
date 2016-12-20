@@ -1,6 +1,7 @@
 ﻿Public Class MIPSAssembly
     Private mipsOps() As OperationCode
     Private OpCodes(255) As OpIndexing
+    Private assemblerStruct As MIPSAssemblingStructure
 
     Private IndexOfNOP
 
@@ -19,6 +20,7 @@
         Dim Details As String
 
         Dim Arguments As String
+        Dim ParsedSyntax() As String
         Dim HasMultiArgs As Boolean
         Dim MultiArgDefs As String
 
@@ -64,8 +66,65 @@
     Public Sub Shutdown()
         ReDim mipsOps(0)
     End Sub
+    Private Sub initStruct()
+
+        '---------------------------------------------------- EE
+        assemblerStruct.rs = Function(r As UInt32)
+                                 assemblerStruct.u32 = (assemblerStruct.u32 And 4229955583) Or (r << 21)
+                                 Return 0
+                             End Function
+        assemblerStruct.rt = Function(r As UInt32)
+                                 assemblerStruct.u32 = (assemblerStruct.u32 And 4292935679) Or (r << 16)
+                                 Return 0
+                             End Function
+        assemblerStruct.rd = Function(r As UInt32)
+                                 assemblerStruct.u32 = (assemblerStruct.u32 And 4294903807) Or (r << 11)
+                                 Return 0
+                             End Function
+        assemblerStruct.sa = Function(r As UInt32)
+                                 assemblerStruct.u32 = (assemblerStruct.u32 And 4294965311) Or (r << 6)
+                                 Return 0
+                             End Function
+        assemblerStruct.target = Function(t As Int32)
+                                     assemblerStruct.u32 = (assemblerStruct.u32 And 4261412864) Or (t \ 4)
+                                     Return 0
+                                 End Function
+
+        '---------------------------------------------------- COP1
+        assemblerStruct.ft = Function(f As UInt32)
+                                 assemblerStruct.u32 = (assemblerStruct.u32 And 4292935679) Or (f << 16)
+                                 Return 0
+                             End Function
+        assemblerStruct.fs = Function(f As UInt32)
+                                 assemblerStruct.u32 = (assemblerStruct.u32 And 4294903807) Or (f << 11)
+                                 Return 0
+                             End Function
+        assemblerStruct.fd = Function(f As UInt32)
+                                 assemblerStruct.u32 = (assemblerStruct.u32 And 4294965311) Or (f << 6)
+                                 Return 0
+                             End Function
+
+        '---------------------------------------------------- COP0
+        assemblerStruct.reg = Function(c As UInt32)
+                                  assemblerStruct.u32 = (assemblerStruct.u32 And 4294903807) Or (c << 11)
+                                  Return 0
+                              End Function
+        assemblerStruct.sel = Function(c As UInt32)
+                                  assemblerStruct.u32 = (assemblerStruct.u32 And 4294965311) Or (c << 6)
+                                  Return 0
+                              End Function
+
+        '---------------------------------------------------- CACHE
+        assemblerStruct.cvar = Function(cv As UInt32)
+                                   assemblerStruct.u32 = (assemblerStruct.u32 And 4292935679) Or (cv << 16)
+                                   Return 0
+                               End Function
+
+    End Sub
     Public Function init() As Integer
         Dim rt As Integer
+
+        initStruct()
 
         rt = Initialize_MIPS_R5900()
         StripDuplicateOps()
@@ -90,7 +149,109 @@
         Return ret
     End Function
 
+    Public Function AssembleInstruction(strInstruct As String, ByRef output As UInt32) As Integer
+        Dim strLine As String, Sp() As String, argCount As Integer, Index As Integer
+        Dim parsed() As String, I As Integer, isCountRight As Boolean, DefaultVal() As String
 
+        If strInstruct.Length < 1 Then Return -1 'Empty string
+        strLine = parseSyntax(strInstruct)
+        If strLine.Length < 1 Then Return -2 'String contains no significant data
+
+        Sp = Split(strLine + " ", " ")
+        Index = InstrToIndex(Sp(0))
+        If Index < 0 Then Return -3 'Unknown Instruction
+
+        argCount = Sp.Count - 2
+        If mipsOps(Index).Arguments = "" And argCount < 1 Then
+            output = mipsOps(Index).DECCode
+            Return 0
+        End If
+
+        isCountRight = False
+        parsed = Split(mipsOps(Index).ParsedSyntax(0) + " ", " ")
+        If argCount = parsed.Count - 1 Then isCountRight = True
+        If mipsOps(Index).HasMultiArgs Then DefaultVal = Split(LCase(mipsOps(Index).MultiArgDefs), "=")
+        If mipsOps(Index).HasMultiArgs And isCountRight = False Then
+            parsed = Split(mipsOps(Index).ParsedSyntax(1) + " ", " ")
+            If argCount = parsed.Count - 1 Then isCountRight = True
+        End If
+
+        If isCountRight Then
+            assemblerStruct.u32 = mipsOps(Index).DECCode
+
+            If mipsOps(Index).HasMultiArgs Then
+                Select Case DefaultVal(0)
+                    Case "rd"
+                        assemblerStruct.rd(Val(DefaultVal(1)))
+                    Case "sel"
+                        assemblerStruct.sel(Val(DefaultVal(1)))
+                    Case Else
+                        MsgBox("Missing: " + DefaultVal(0))
+                End Select
+            End If
+
+            For I = 0 To parsed.Count - 1
+
+                Select Case parsed(I)
+                    Case ""
+                        'Nothing to do here
+                    Case "rs"
+                        assemblerStruct.rs(GetEERegVal(Sp(I + 1)))
+                    Case "rt"
+                        assemblerStruct.rt(GetEERegVal(Sp(I + 1)))
+                    Case "rd"
+                        assemblerStruct.rd(GetEERegVal(Sp(I + 1)))
+                    Case "sa"
+                        Sp(I + 1) = Replace(Sp(I + 1), "$", "&h0")
+                        Sp(I + 1) = Replace(Sp(I + 1), "0x", "&h0")
+                        assemblerStruct.sa(Val(Sp(I + 1)) And 31)
+                    Case "base"
+                        assemblerStruct.rs(GetEERegVal(Sp(I + 1)))
+                    Case "hint"
+                        assemblerStruct.rt(GetEERegVal(Sp(I + 1)))
+                    Case "%i"
+                        Sp(I + 1) = Replace(Sp(I + 1), "$", "&h0")
+                        Sp(I + 1) = Replace(Sp(I + 1), "0x", "&h0")
+                        assemblerStruct.s64 = Val(Sp(I + 1))
+                        assemblerStruct.u16 = assemblerStruct.uImm
+                    Case "target"
+                        Sp(I + 1) = Replace(Sp(I + 1), "$", "&h0")
+                        Sp(I + 1) = Replace(Sp(I + 1), "0x", "&h0")
+                        assemblerStruct.target(CDec(Sp(I + 1)))
+                    Case "%d"
+                        Sp(I + 1) = Replace(Sp(I + 1), "$", "")
+                        Sp(I + 1) = Replace(Sp(I + 1), "0x", "")
+                        If Sp(0) = "syscall" Then
+                            assemblerStruct.u32 = (assemblerStruct.u32 And 4227858495) Or ((Val("&H" + Sp(I + 1)) And 1048575) << 6)
+                        ElseIf Sp(0) = "break" Then
+                            assemblerStruct.u32 = (assemblerStruct.u32 And 4227858495) Or ((Val("&H" + Sp(I + 1)) And 1048575) << 6)
+                        Else
+                            assemblerStruct.u32 = (assemblerStruct.u32 And 4294901823) Or ((Val("&H" + Sp(I + 1)) And 1023) << 6)
+                        End If
+                    Case "fd"
+                        assemblerStruct.fd(GetCOP1RegVal(Sp(I + 1)))
+                    Case "fs"
+                        assemblerStruct.fs(GetCOP1RegVal(Sp(I + 1)))
+                    Case "ft"
+                        assemblerStruct.ft(GetCOP1RegVal(Sp(I + 1)))
+                    Case "reg"
+                        assemblerStruct.reg(GetCOP0RegVal(Sp(I + 1)))
+                    Case "sel"
+                        assemblerStruct.sel(GetCOP0RegVal(Sp(I + 1)))
+                    Case "cvar"
+                        assemblerStruct.cvar(GetCACHEVarVal(Sp(I + 1)))
+                    Case Else
+                        MsgBox("Missing: " + parsed(I))
+                        Return -4 'Must be incomplete var list?
+                End Select
+            Next
+
+            output = assemblerStruct.u32
+            Return 0 'Success
+        End If
+
+        Return -5 'Invalid argument count
+    End Function
 
     Public Function DisassembleValue(decCode As Int64) As String
         Return Disassemble_WI(decCode, FetchInstr(decCode))
@@ -127,6 +288,8 @@
                         Case "rt"
                             Cache2(I) = GetEERegStr(Cache)
                         Case "base"
+                            Cache2(I) = GetEERegStr(Cache)
+                        Case "hint"
                             Cache2(I) = GetEERegStr(Cache)
                         Case "%i"
                             Cache2(I) = "$" + Right("0000" + Hex(Cache), 4)
@@ -270,7 +433,28 @@ doRetry:
 
     End Function
 
+    Public Function InstrToIndex(strInst As String) As Integer
+        Dim high As Integer, low As Integer, i As Integer
+        Dim strIn As String
 
+        strIn = UCase(strInst)
+        low = 0
+        high = mipsOps.Count - 1
+
+        While (low <= high)
+            i = (low + high) \ 2
+            Select Case Strings.StrComp(strIn, mipsOps(i).Instruction)
+                Case -1
+                    high = i - 1
+                Case 0
+                    Return i
+                Case 1
+                    low = i + 1
+            End Select
+        End While
+
+        Return -1
+    End Function
 
 
 
@@ -308,6 +492,11 @@ doRetry:
                 If sp.Count - 1 > 0 Then .HasMultiArgs = True
                 If sp.Count - 1 <= 0 Then .HasMultiArgs = False
 
+                .ParsedSyntax = Split(.Arguments + vbCrLf, vbCrLf)
+                'ReDim Preserve .ParsedSyntax(.ParsedSyntax.Count - 2)
+                .ParsedSyntax(0) = parseSyntax(.ParsedSyntax(0))
+                If .HasMultiArgs Then .ParsedSyntax(1) = parseSyntax(.ParsedSyntax(1))
+
                 '--------------------------------------------------- Binary Setup
                 .BINCode = Lines(i2)
                 .BINMask = Lines(i2 + 1)
@@ -343,6 +532,34 @@ doRetry:
         Next I
 
         Return mipsOps.Count
+    End Function
+
+    Private Function parseSyntax(strIn As String) As String
+        Dim ret As String, cmtStrip() As String
+        ret = LCase(strIn)
+        If ret = "" Then Return ret
+
+        cmtStrip = Split(ret + "//", "//")
+        ret = cmtStrip(0)
+
+        ret = Replace(ret, ",", " ")
+        ret = Replace(ret, "(", " ")
+        ret = Replace(ret, ")", " ")
+        ret = Replace(ret, "0x", "$")
+        ret = stripSpaces(ret)
+        Return ret
+    End Function
+    Private Function stripSpaces(strIn As String) As String
+        Dim lastLen As Integer, ret As String
+        ret = strIn
+        Do
+            lastLen = ret.Length
+            ret = Replace(ret, "  ", " ")
+            If Left(ret, 1).Equals(" ") Then ret = Right(ret, ret.Length - 1)
+            If Right(ret, 1).Equals(" ") Then ret = Left(ret, ret.Length - 1)
+            If ret = "" Then Return ""
+        Loop Until lastLen = ret.Length
+        Return ret
     End Function
 
 
@@ -620,6 +837,7 @@ skipForIType:
             .Arguments = srcM.Arguments
             .HasMultiArgs = srcM.HasMultiArgs
             .MultiArgDefs = srcM.MultiArgDefs
+            .ParsedSyntax = Split(Join(srcM.ParsedSyntax, vbCrLf), vbCrLf)
             .BINCode = srcM.BINCode
             .BINMask = srcM.BINMask
             .hexCode = srcM.hexCode

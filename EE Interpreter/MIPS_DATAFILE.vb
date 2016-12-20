@@ -2972,7 +2972,7 @@
         ret = ret + "6:SUB" + vbCrLf
         ret = ret + "========================================" + vbCrLf
         ret = ret + "SUBA.S : Floating Point Subtract to Accumulator" + vbCrLf
-        ret = ret + "SUBA.S fs, ft I" + vbCrLf
+        ret = ret + "SUBA.S fs, ft" + vbCrLf
         ret = ret + "01000110000000000000000000011001" + vbCrLf
         ret = ret + "11111111111000000000011111111111" + vbCrLf
         ret = ret + "COP1" + vbCrLf

@@ -60,7 +60,7 @@
         Return "Idk"
     End Function
 
-    Public Function GetCACHEVarStr(VarIndex As Int64) As String
+    Public Function GetCACHEVarStr(VarIndex As Byte) As String
         Select Case VarIndex
             Case 0
                 Return "ixltg"
@@ -107,7 +107,55 @@
         End Select
     End Function
 
-    Public Function GetCOP0RegStr(RegIndex As Int64) As String
+    Public Function GetCACHEVarVal(CacheVar As String) As Byte
+        Select Case CacheVar
+            Case "ixltg"
+                Return 0
+            Case "ixldt"
+                Return 1
+            Case "bxlbt"
+                Return 2
+            Case "ixstg"
+                Return 4
+            Case "ixsdt"
+                Return 5
+            Case "bxsbt"
+                Return 6
+            Case "ixin"
+                Return 7
+            Case "bhinbt"
+                Return 10
+            Case "ihin"
+                Return 11
+            Case "bfh"
+                Return 12
+            Case "ifl"
+                Return 14
+            Case "dxltg"
+                Return 16
+            Case "dxldt"
+                Return 17
+            Case "dxstg"
+                Return 18
+            Case "dxsdt"
+                Return 19
+            Case "dxwbin"
+                Return 20
+            Case "dxin"
+                Return 22
+            Case "dhwbin"
+                Return 24
+            Case "dhinHit"
+                Return 26
+            Case "dhwoin"
+                Return 28
+            Case Else
+                Return 0
+        End Select
+    End Function
+
+
+    Public Function GetCOP0RegStr(RegIndex As Byte) As String
         Select Case RegIndex
             Case 0
                 Return "$index"
@@ -176,11 +224,11 @@
         End Select
     End Function
 
-    Public Function GetCOP1RegStr(RegIndex As Int64) As String
+    Public Function GetCOP1RegStr(RegIndex As Byte) As String
         Return "$f" + RegIndex.ToString
     End Function
 
-    Public Function GetEERegStr(RegIndex As Int64) As String
+    Public Function GetEERegStr(RegIndex As Byte) As String
         Select Case RegIndex
             Case 0
                 Return "zero"
@@ -251,7 +299,7 @@
         End Select
     End Function
 
-    Public Function GetCOP0RegVal(strReg As String) As Int64
+    Public Function GetCOP0RegVal(strReg As String) As Byte
         Select Case LCase(strReg)
             Case "$index"
                 Return 0
@@ -322,17 +370,18 @@
         End Select
     End Function
 
-    Public Function GetCOP1RegVal(strReg As String) As Int64
+    Public Function GetCOP1RegVal(strReg As String) As Byte
         Dim tReg As String
 
         tReg = LCase(strReg)
         tReg = Replace(tReg, "$", "")
         tReg = Replace(tReg, "f", "")
+        If CDec(tReg) > 31 Then Return 0
 
         Return CDec(tReg)
     End Function
 
-    Public Function GetEERegVal(strReg As String) As Int64
+    Public Function GetEERegVal(strReg As String) As Byte
         Select Case LCase(strReg)
             Case "zero"
                 Return 0
